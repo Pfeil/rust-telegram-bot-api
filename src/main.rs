@@ -1,8 +1,9 @@
 /*
  * This is a prototyping application to create a telegram bot.
  */
-
+//#![feature(use_extern_macros)]
 mod api;
+mod packages;
 extern crate tokio_core; // app loop
 
 use api::Bot;
@@ -16,11 +17,12 @@ fn main() {
     let base_url: String = "https://api.telegram.org/bot".to_owned() + token.as_str() + "/";
     let core = Core::new().unwrap();
     let mut server = Bot::new(token, base_url, core);
-    let interval = Duration::from_millis(1000);
+    let interval = Duration::from_millis(10000);
     loop {
         let start = Instant::now();
-        let value = server.get_updates();
+        let value = server.get_me();
         // TODO handle value
+        println!("value is {:?}", value);
         let elapsed = start.elapsed();
         if elapsed <= interval {
             thread::sleep(interval - elapsed);

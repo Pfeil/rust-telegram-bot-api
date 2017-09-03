@@ -2,7 +2,6 @@
  * This module encapsulates the communication with Telegram servers
  * by providing a public Bot class with the necessary functionality.
  */
-
 extern crate futures; // needed by hyper i think
 extern crate hyper; // http library
 extern crate hyper_tls; // https support lol
@@ -11,20 +10,22 @@ extern crate serde_json; // json parser
 
 
 use std::io;
+use std::string::String;
 use self::futures::{Future, Stream}; // needed for http response handling (indirect at least)
 use self::hyper::Client; // http client functionality
 use self::hyper::client::HttpConnector;
 use self::hyper_tls::HttpsConnector;
 use self::tokio_core::reactor::Core; // application loop
 use self::serde_json::Value;
+use packages::User;
 
 
 
 pub struct Bot {
     token: String,
     base_url: String,
-    http: Client<HttpsConnector<HttpConnector>, hyper::Body>, // from hyper
-    core: Core,
+    http: Client<HttpsConnector<HttpConnector>, hyper::Body>, // (hyper http implementation)
+    core: Core, // for executing http calls
 }
 
 
@@ -46,6 +47,10 @@ impl Bot {
         self.http_get("getUpdates")
     }
 
+    pub fn get_me(&mut self) -> User {
+        User::from_json(self.http_get("getMe"))
+    }
+
     fn http_get(&mut self, method: &str) -> Value {
         let uri = (self.base_url.to_owned() + method).parse().unwrap();
         println!("GET({:?})", uri);
@@ -56,15 +61,13 @@ impl Bot {
                 res.body()
                     .concat2()
                     .and_then(move |body| {
-                        //io::stdout().write_all(&body);
-                        let body_content: Value =
-                            serde_json::from_slice(&body.to_owned())
-                                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-                        println!("message is {}",
-                                 body_content["result"][0]["message"]["text"]);
-                        Ok(body_content)
-                    })
+                                  //io::stdout().write_all(&body);
+                                  let body_content: Value =
+                                      serde_json::from_slice(&body.to_owned())
+                                          .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                                  Ok(body_content)
+                              })
             });
-        self.core.run(content).unwrap()
+        self.core.run(content).unwrap() // TODO handle errors
     }
 }
