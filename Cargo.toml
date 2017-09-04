@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Andreas Pfeil <andreas.pfeil@student.kit.edu>"]
 
 [dependencies]
+time = "0.1.38"
 futures = "0.1.14"
 tokio-core = "0.1.8"
 hyper = "0.11.1"

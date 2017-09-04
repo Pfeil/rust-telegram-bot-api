@@ -17,7 +17,7 @@ use self::hyper::client::HttpConnector;
 use self::hyper_tls::HttpsConnector;
 use self::tokio_core::reactor::Core; // application loop
 use self::serde_json::Value;
-use packages::User;
+use packages::*;
 
 
 
@@ -43,12 +43,14 @@ impl Bot {
         }
     }
 
-    pub fn get_updates(&mut self) -> Value {
-        self.http_get("getUpdates")
+    pub fn get_updates(&mut self) -> Updates {
+        // TODO should I handle the "ok" value here?
+        Updates::from_json(self.http_get("getUpdates"))
     }
 
     pub fn get_me(&mut self) -> User {
-        User::from_json(self.http_get("getMe"))
+        // TODO should I handle the "ok" value here?
+        User::from_json(self.http_get("getMe")["result"].to_owned())
     }
 
     fn http_get(&mut self, method: &str) -> Value {
@@ -65,6 +67,7 @@ impl Bot {
                                   let body_content: Value =
                                       serde_json::from_slice(&body.to_owned())
                                           .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                                  //println!("Received:\n\t{:?}", body_content); // DEBUG
                                   Ok(body_content)
                               })
             });

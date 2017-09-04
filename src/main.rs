@@ -20,7 +20,7 @@ fn main() {
     let interval = Duration::from_millis(10000);
     loop {
         let start = Instant::now();
-        let value = server.get_me();
+        let value = server.get_updates();
         // TODO handle value
         println!("value is {:?}", value);
         let elapsed = start.elapsed();
