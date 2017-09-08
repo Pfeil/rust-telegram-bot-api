@@ -12,8 +12,9 @@ extern crate serde_json; // json parser
 use std::io;
 use std::string::String;
 use self::futures::{Future, Stream}; // needed for http response handling (indirect at least)
-use self::hyper::Client; // http client functionality
+use self::hyper::{Client, Request, Method, Body}; // http client functionality
 use self::hyper::client::HttpConnector;
+use self::hyper::header::{ContentType, ContentLength};
 use self::hyper_tls::HttpsConnector;
 use self::tokio_core::reactor::Core; // application loop
 use self::serde_json::Value;
@@ -45,12 +46,12 @@ impl Bot {
 
     pub fn get_updates(&mut self) -> Updates {
         // TODO should I handle the "ok" value here?
-        Updates::from_json(self.http_get("getUpdates"))
+        Updates::from_json(self.http_post("getUpdates", "{}"))
     }
 
     pub fn get_me(&mut self) -> User {
         // TODO should I handle the "ok" value here?
-        User::from_json(self.http_get("getMe")["result"].to_owned())
+        User::from_json(self.http_post("getMe", "{}")["result"].to_owned())
     }
 
     fn http_get(&mut self, method: &str) -> Value {
@@ -58,6 +59,33 @@ impl Bot {
         println!("GET({:?})", uri);
         let content = self.http
             .get(uri)
+            .and_then(|res| {
+                println!("Response: {}", res.status());
+                res.body()
+                    .concat2()
+                    .and_then(move |body| {
+                                  //io::stdout().write_all(&body);
+                                  let body_content: Value =
+                                      serde_json::from_slice(&body.to_owned())
+                                          .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                                  //println!("Received:\n\t{:?}", body_content); // DEBUG
+                                  Ok(body_content)
+                              })
+            });
+        self.core.run(content).unwrap() // TODO handle errors
+    }
+
+    fn http_post(&mut self, method: &str, json: &str) -> Value {
+        let uri = (self.base_url.to_owned() + method).parse().unwrap();
+        println!("POST({:?})", uri);
+        let mut request: Request<Body> = Request::new(Method::Post, uri);
+        request.headers_mut().set(ContentType::json());
+        request
+            .headers_mut()
+            .set(ContentLength(json.len() as u64));
+        request.set_body(json.to_owned());
+        let content = self.http
+            .request(request)
             .and_then(|res| {
                 println!("Response: {}", res.status());
                 res.body()
