@@ -6,40 +6,17 @@
 extern crate serde_json; // json parser
 extern crate time;
 
-use self::time::Timespec;
+
+use self::time::Timespec; // TODO use this to represent time in the final Message struct somehow!
 use self::serde_json::Value;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Updates {
     ok: bool,
     result: Vec<Update>,
 }
 
-impl Updates {
-    pub fn from_json(json: Value) -> Updates {
-        let ok: bool = match json["ok"] {
-            Value::Bool(b) => b,
-            _ => panic!("Panic: ok was not a bool in Updates"),
-        };
-        let result = match json["result"] {
-            Value::Array(ref vec) => {
-                let mut updates = Vec::new();
-                for val in vec {
-                    updates.push(Update::from_json(val.to_owned()));
-                }
-                updates
-            }
-            Value::Object(_) => vec![Update::from_json(json["result"].to_owned())],
-            _ => Vec::new(),
-        };
-        Updates {
-            ok: ok,
-            result: result,
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Update {
     update_id: u64,
     message: Option<Message>,
@@ -54,7 +31,9 @@ pub struct Update {
     //pre_checkout_query: Option<PreCheckoutQuery>,
 }
 
+#[allow(dead_code)]
 impl Update {
+    #[deprecated(since="0.2.0", note="please use `serge::from_value` instead")]
     pub fn from_json(json: Value) -> Update {
         let id = match json["update_id"] {
             Value::Number(ref s) => s.as_u64().unwrap(),
@@ -71,17 +50,18 @@ impl Update {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
     // TODO placeholder. maybe use an enum?
     message_id: i64,
     from: Option<User>,
-    date: Timespec, // unix time
+    date: i64, // unix time
     /*chat: Chat,*/
     text: Option<String>,
 }
 
 impl Message {
+    #[deprecated(since="0.2.0", note="please use `serge::from_value` instead")]
     pub fn from_json(json: Value) -> Message {
         let id = match json["message_id"] {
             Value::Number(ref n) => n.as_i64().unwrap(),
@@ -92,8 +72,8 @@ impl Message {
             _ => Option::None,
         };
         let date = match json["date"] {
-            Value::Number(ref n) => Timespec::new(n.as_i64().unwrap(), 0),
-            _ => Timespec::new(0, 0),
+            Value::Number(ref n) => n.as_i64().unwrap(),
+            _ => 0,
         };
         let text = match json["text"] {
             Value::String(ref s) => Some(s.to_owned()),
@@ -108,7 +88,7 @@ impl Message {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct User {
     id: i64,
     is_bot: bool,
@@ -119,6 +99,7 @@ pub struct User {
 }
 
 impl User {
+    #[deprecated(since="0.2.0", note="please use `serge::from_value` instead")]
     pub fn from_json(json: Value) -> User {
         let id = match json["id"] {
             Value::Number(ref n) => n.as_i64().unwrap(),

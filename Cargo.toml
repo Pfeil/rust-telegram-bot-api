@@ -1,6 +1,6 @@
 [package]
 name = "shoppingbot"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Andreas Pfeil <andreas.pfeil@student.kit.edu>"]
 
 [dependencies]
@@ -9,4 +9,6 @@ futures = "0.1.14"
 tokio-core = "0.1.8"
 hyper = "0.11.1"
 hyper-tls = "0.1.2"
-serde_json = "1.0.2"
+serde = "1.0.11"
+serde_json = "1.0.3"
+serde_derive = "1.0.12"

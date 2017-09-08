@@ -46,14 +46,16 @@ impl Bot {
 
     pub fn get_updates(&mut self) -> Updates {
         // TODO should I handle the "ok" value here?
-        Updates::from_json(self.http_post("getUpdates", "{}"))
+        serde_json::from_value(self.http_post("getUpdates", "{}")).unwrap() // TODO handle errors
     }
 
+    #[allow(dead_code)]
     pub fn get_me(&mut self) -> User {
         // TODO should I handle the "ok" value here?
-        User::from_json(self.http_post("getMe", "{}")["result"].to_owned())
+        serde_json::from_value(self.http_post("getMe", "{}")["result"].to_owned()).unwrap() // TODO handle errors
     }
 
+    #[allow(dead_code)]
     fn http_get(&mut self, method: &str) -> Value {
         let uri = (self.base_url.to_owned() + method).parse().unwrap();
         println!("GET({:?})", uri);

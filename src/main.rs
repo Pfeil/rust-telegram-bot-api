@@ -4,6 +4,8 @@
 //#![feature(use_extern_macros)]
 mod api;
 mod packages;
+#[macro_use]
+extern crate serde_derive;
 extern crate tokio_core; // app loop
 
 use api::Bot;
