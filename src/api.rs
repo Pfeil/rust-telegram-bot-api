@@ -61,7 +61,10 @@ impl Bot {
                         Value::Array(ref array) => {
                             let mut result: Vec<Update> = Vec::new();
                             for object in array {
-                                result.push(Update::from_json(object.to_owned()));
+                                let upd = Update::from_json(object.to_owned());
+                                if upd.is_some() {
+                                    result.push(upd.unwrap());
+                                }
                             }
                             Ok(result)
                         }
@@ -83,7 +86,7 @@ impl Bot {
         //! This is a testing functionalty offered by the telegram bot api.
         let json = self.http_post("getMe", "{}");
         if json["ok"] == true {
-            Ok(User::from_json(json["result"].to_owned()))
+            Ok(User::from_json(json["result"].to_owned()).unwrap())
         } else {
             Err(Error::from_json(json))
         }
