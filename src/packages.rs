@@ -1,12 +1,11 @@
-/*
- * This module shall contain all container classes
- * for the communication with the Telegram Servers.
- *
- * Since members can't use the name `type`,
- * the deserialization of serde_json can not be used
- * in every case and is therefore manually implemented
- * or wrapped.
- */
+//! This module contains all container classes
+//! for the communication with the Telegram Servers.
+//!
+//! Since members can't use the name `type`,
+//! the deserialization of serde_json can not be used
+//! in every case and is therefore manually implemented
+//! or wrapped.
+
 
 extern crate serde_json; // json parser
 extern crate time;

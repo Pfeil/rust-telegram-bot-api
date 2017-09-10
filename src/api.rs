@@ -1,7 +1,6 @@
-/*
- * This module encapsulates the communication with Telegram servers
- * by providing a public Bot class with the necessary functionality.
- */
+//! This module encapsulates the communication with Telegram servers
+//! by providing a public Bot class with the available functionality.
+
 extern crate futures; // needed by hyper i think
 extern crate hyper; // http library
 extern crate hyper_tls; // https support lol
@@ -22,7 +21,7 @@ use packages::*;
 use parameters::*;
 
 
-
+/// This struct offers access to all implemented bot functionality.
 pub struct Bot {
     base_url: String,
     http: Client<HttpsConnector<HttpConnector>, hyper::Body>, // (hyper http implementation)
@@ -32,6 +31,9 @@ pub struct Bot {
 #[allow(dead_code)]
 impl Bot {
     pub fn new(token: String, core: Core) -> Bot {
+        //! Creates a new bot using the token and a tokio core.
+        //! It is recommended not to hard code the token but use
+        //! `let token: String = env::var("TELEGRAM_BOT_TOKEN").unwrap();`
         let handle = core.handle();
         let http = Client::configure()
             .connector(HttpsConnector::new(2, &handle).unwrap())
@@ -45,6 +47,7 @@ impl Bot {
     }
 
     pub fn get_updates(&mut self) -> Result<Vec<Update>, Error> {
+        //! Fetches updates and returns a `Vec<packages::Update>` or an `packages::Error`
         // TODO enable optional parameters
         let json = self.http_post("getUpdates", "{}");
         match json {
@@ -76,6 +79,8 @@ impl Bot {
     }
 
     pub fn get_me(&mut self) -> Result<User, Error> {
+        //! Fetches information about this bot from the telegram server.
+        //! This is a testing functionalty offered by the telegram bot api.
         let json = self.http_post("getMe", "{}");
         if json["ok"] == true {
             Ok(User::from_json(json["result"].to_owned()))
@@ -85,12 +90,14 @@ impl Bot {
     }
 
     pub fn send_message(&mut self, parameters: MessageParams) -> Value {
+        //! Sends a message and returns what the telegram servers received.
         // TODO enable optional parameters
-        // TODO map the return value to some useful struct
+        // TODO map the return value to some useful struct (message?)
         self.http_post("sendMessage", parameters.to_json().as_str())
     }
 
     fn http_get(&mut self, method: &str) -> Value {
+        //! Sends a GET request at `base_url/method`.
         let uri = (self.base_url.to_owned() + method).parse().unwrap();
         println!("GET({:?})", uri);
         let content = self.http
@@ -112,6 +119,8 @@ impl Bot {
     }
 
     fn http_post(&mut self, method: &str, json: &str) -> Value {
+        //! Sends a POST request at `base_url/method` with a given `&str`
+        //! which must be valid JSON.
         let uri = (self.base_url.to_owned() + method).parse().unwrap();
         println!("POST({:?}): {:?}", uri, json);
         let mut request: Request<Body> = Request::new(Method::Post, uri);

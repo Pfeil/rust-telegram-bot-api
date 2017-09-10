@@ -1,3 +1,6 @@
+//! A simple example of a bot fetching updates (messages)
+//! and printing out the results via stdout.
+
 extern crate shoppingbot;
 extern crate tokio_core; // app loop
 
@@ -11,9 +14,8 @@ use tokio_core::reactor::Core; // application loop
 /// every 10 seconds and prints them.
 fn main() {
     let token: String = env::var("TELEGRAM_BOT_TOKEN").unwrap();
-    let base_url: String = "https://api.telegram.org/bot".to_owned() + token.as_str() + "/";
     let core = Core::new().unwrap();
-    let mut bot = Bot::new(token, base_url, core);
+    let mut bot = Bot::new(token, core);
     let interval = Duration::from_millis(10000);
     loop {
         let start = Instant::now();

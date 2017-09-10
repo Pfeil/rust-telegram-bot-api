@@ -1,3 +1,6 @@
+//! This module contains Structs that can be serialized
+//! to send parameters to the telegram servers using the Bot class.
+
 extern crate serde_json; // json parser
 
 

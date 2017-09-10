@@ -1,3 +1,5 @@
+//! A simple example of a bot, reacting on input by returning a message.
+
 extern crate shoppingbot;
 extern crate tokio_core; // app loop
 
@@ -10,7 +12,7 @@ use std::env; // to read shell variables (telegram token)
 use tokio_core::reactor::Core; // application loop
 
 /// This example is a simple loop that fetches Updates
-/// every 10 seconds and prints them.
+/// and responds to new updates with "pong".
 fn main() {
     // set up telegram bot
     let token: String = env::var("TELEGRAM_BOT_TOKEN").unwrap();
