@@ -19,43 +19,77 @@ use self::hyper_tls::HttpsConnector;
 use self::tokio_core::reactor::Core; // application loop
 use self::serde_json::Value;
 use packages::*;
+use parameters::*;
 
 
 
 pub struct Bot {
-    token: String,
     base_url: String,
     http: Client<HttpsConnector<HttpConnector>, hyper::Body>, // (hyper http implementation)
     core: Core, // for executing http calls
 }
 
-
+#[allow(dead_code)]
 impl Bot {
-    pub fn new(token: String, base_url: String, core: Core) -> Bot {
+    pub fn new(token: String, core: Core) -> Bot {
         let handle = core.handle();
         let http = Client::configure()
             .connector(HttpsConnector::new(2, &handle).unwrap())
             .build(&handle);
+        let base_url = "https://api.telegram.org/bot".to_owned() + token.as_str() + "/";
         Bot {
-            token: token,
             base_url: base_url,
             http: http, // from hyper
             core: core,
         }
     }
 
-    pub fn get_updates(&mut self) -> Updates {
-        // TODO should I handle the "ok" value here?
-        serde_json::from_value(self.http_post("getUpdates", "{}")).unwrap() // TODO handle errors
+    pub fn get_updates(&mut self) -> Result<Vec<Update>, Error> {
+        // TODO enable optional parameters
+        let json = self.http_post("getUpdates", "{}");
+        match json {
+            Value::Null => {
+                // TODO log this error
+                Ok(Vec::new())
+            }
+            Value::Object(obj) => {
+                if obj["ok"].as_bool().unwrap() {
+                    match obj["result"] {
+                        Value::Array(ref array) => {
+                            let mut result: Vec<Update> = Vec::new();
+                            for object in array {
+                                result.push(Update::from_json(object.to_owned()));
+                            }
+                            Ok(result)
+                        }
+                        _ => {
+                            // TODO log error!
+                            Ok(Vec::new())
+                        }
+                    }
+                } else {
+                    Err(Error::from_json(Value::Object(obj)))
+                }
+            }
+            _ => Ok(Vec::new()),
+        }
     }
 
-    #[allow(dead_code)]
-    pub fn get_me(&mut self) -> User {
-        // TODO should I handle the "ok" value here?
-        serde_json::from_value(self.http_post("getMe", "{}")["result"].to_owned()).unwrap() // TODO handle errors
+    pub fn get_me(&mut self) -> Result<User, Error> {
+        let json = self.http_post("getMe", "{}");
+        if json["ok"] == true {
+            Ok(User::from_json(json["result"].to_owned()))
+        } else {
+            Err(Error::from_json(json))
+        }
     }
 
-    #[allow(dead_code)]
+    pub fn send_message(&mut self, parameters: MessageParams) -> Value {
+        // TODO enable optional parameters
+        // TODO map the return value to some useful struct
+        self.http_post("sendMessage", parameters.to_json().as_str())
+    }
+
     fn http_get(&mut self, method: &str) -> Value {
         let uri = (self.base_url.to_owned() + method).parse().unwrap();
         println!("GET({:?})", uri);
@@ -74,12 +108,12 @@ impl Bot {
                                   Ok(body_content)
                               })
             });
-        self.core.run(content).unwrap() // TODO handle errors
+        self.core.run(content).unwrap_or(Value::Null) // TODO handle errors
     }
 
     fn http_post(&mut self, method: &str, json: &str) -> Value {
         let uri = (self.base_url.to_owned() + method).parse().unwrap();
-        println!("POST({:?})", uri);
+        println!("POST({:?}): {:?}", uri, json);
         let mut request: Request<Body> = Request::new(Method::Post, uri);
         request.headers_mut().set(ContentType::json());
         request
@@ -101,6 +135,6 @@ impl Bot {
                                   Ok(body_content)
                               })
             });
-        self.core.run(content).unwrap() // TODO handle errors
+        self.core.run(content).unwrap_or(Value::Null)
     }
 }

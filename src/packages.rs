@@ -1,6 +1,11 @@
 /*
  * This module shall contain all container classes
  * for the communication with the Telegram Servers.
+ *
+ * Since members can't use the name `type`,
+ * the deserialization of serde_json can not be used
+ * in every case and is therefore manually implemented
+ * or wrapped.
  */
 
 extern crate serde_json; // json parser
@@ -11,15 +16,23 @@ use self::time::Timespec; // TODO use this to represent time in the final Messag
 use self::serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Updates {
-    ok: bool,
-    result: Vec<Update>,
+pub struct Error {
+    pub ok: bool,
+    pub error_code: u32,
+    pub description: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl Error {
+    pub fn from_json(json: Value) -> Error {
+        serde_json::from_value(json).unwrap()
+    }
+}
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Update {
-    update_id: u64,
-    message: Option<Message>,
+    pub update_id: u64,
+    pub message: Option<Message>,
     // TODO implement functionality below
     //edited_message: Option<Message>,
     //channel_post: Option<Message>,
@@ -33,106 +46,85 @@ pub struct Update {
 
 #[allow(dead_code)]
 impl Update {
-    #[deprecated(since="0.2.0", note="please use `serge::from_value` instead")]
     pub fn from_json(json: Value) -> Update {
-        let id = match json["update_id"] {
-            Value::Number(ref s) => s.as_u64().unwrap(),
-            _ => panic!("Panic: id was not a number in Update"),
-        };
         let message = match json["message"] {
             Value::Object(_) => Some(Message::from_json(json["message"].to_owned())),
             _ => Option::None,
         };
         Update {
-            update_id: id,
+            update_id: serde_json::from_value(json["update_id"].to_owned()).unwrap(),
             message: message,
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Message {
     // TODO placeholder. maybe use an enum?
-    message_id: i64,
-    from: Option<User>,
-    date: i64, // unix time
-    /*chat: Chat,*/
-    text: Option<String>,
+    pub message_id: i64,
+    pub from: Option<User>,
+    pub date: i64, // unix time
+    pub chat: Chat,
+    pub text: Option<String>,
 }
 
 impl Message {
-    #[deprecated(since="0.2.0", note="please use `serge::from_value` instead")]
     pub fn from_json(json: Value) -> Message {
-        let id = match json["message_id"] {
-            Value::Number(ref n) => n.as_i64().unwrap(),
-            _ => panic!("Panic: id was not a number in Message"),
-        };
         let from = match json["from"] {
             Value::Object(_) => Some(User::from_json(json["from"].to_owned())),
             _ => Option::None,
         };
-        let date = match json["date"] {
-            Value::Number(ref n) => n.as_i64().unwrap(),
-            _ => 0,
-        };
-        let text = match json["text"] {
-            Value::String(ref s) => Some(s.to_owned()),
-            _ => None,
+        let chat = match json["chat"] {
+            Value::Object(_) => Chat::from_json(json["chat"].to_owned()),
+            _ => {
+                Chat {
+                    id: 0,
+                    chat_type: "wrong".to_owned(),
+                }
+            }
         };
         Message {
-            message_id: id,
+            message_id: serde_json::from_value(json["message_id"].to_owned()).unwrap(),
             from: from,
-            date: date,
-            text: text,
+            date: serde_json::from_value(json["date"].to_owned()).unwrap(),
+            chat: chat,
+            text: serde_json::from_value(json["text"].to_owned()).unwrap(),
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct User {
-    id: i64,
-    is_bot: bool,
-    first_name: String,
-    last_name: Option<String>,
-    username: Option<String>,
-    language_code: Option<String>,
+    pub id: i64,
+    pub is_bot: bool,
+    pub first_name: String,
+    pub last_name: Option<String>,
+    pub username: Option<String>,
+    pub language_code: Option<String>,
 }
 
 impl User {
-    #[deprecated(since="0.2.0", note="please use `serge::from_value` instead")]
     pub fn from_json(json: Value) -> User {
-        let id = match json["id"] {
-            Value::Number(ref n) => n.as_i64().unwrap(),
-            _ => panic!("Panic: id was not a Number in User"),
-        };
-        let is_bot = match json["is_bot"] {
-            Value::Bool(b) => b,
-            _ => false,
-        };
-        let first_name = match json["first_name"] {
-            Value::String(ref s) => s.to_owned(),
-            _ => String::from("First Name Unknown"),
-        };
-        let last_name = match json["last_name"] {
-            Value::String(ref s) => Some(s.to_owned()),
-            _ => Option::None,
-        };
-        let username = match json["username"] {
-            Value::String(ref s) => Some(s.to_owned()),
-            _ => Option::None,
-        };
-        let language_code = match json["language_code"] {
-            Value::String(ref s) => Some(s.to_owned()),
-            _ => Option::None,
-        };
+        serde_json::from_value(json).unwrap()
+    }
+}
 
-        User {
-            id: id,
-            is_bot: is_bot,
-            first_name: first_name,
-            last_name: last_name,
-            username: username,
-            language_code: language_code,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Chat {
+    pub id: i64,
+    pub chat_type: String,
+    // TODO add optional members
+}
+
+impl Chat {
+    fn from_json(json: Value) -> Chat {
+        let chat_type = match json["type"] {
+            Value::String(ref s) => s.to_owned(),
+            _ => "wrong".to_owned(),
+        };
+        Chat {
+            id: serde_json::from_value(json["id"].to_owned()).unwrap(),
+            chat_type: chat_type,
         }
     }
 }
