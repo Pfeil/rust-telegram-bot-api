@@ -14,6 +14,7 @@ use self::serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Error {
+    // TODO need ENUM with Error Types, like HttpError and JsonError
     pub ok: bool,
     pub error_code: u32,
     pub description: String,
