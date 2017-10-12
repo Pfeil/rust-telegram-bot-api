@@ -34,15 +34,15 @@ pub struct Bot {
 
 #[allow(dead_code)]
 impl Bot {
-    pub fn new(token: String, core_handle: Handle) -> Bot {
+    pub fn new(token: String, handle: &Handle) -> Bot {
         //! Creates a new bot using the token and a tokio core.
         //! It is recommended not to hard code the token but use
         //! `let token: String = env::var("TELEGRAM_BOT_TOKEN").unwrap();`
         // TODO can I somehow remove the core_handle?
         // TODO how many threads should be used? Expose `with_threads(n: usize)`
         let http = Client::configure()
-            .connector(HttpsConnector::new(2, &core_handle).unwrap())
-            .build(&core_handle);
+            .connector(HttpsConnector::new(2, &handle).unwrap())
+            .build(&handle);
         let base_url = "https://api.telegram.org/bot".to_owned() + token.as_str() + "/";
         Bot {
             base_url: base_url,
@@ -50,48 +50,49 @@ impl Bot {
         }
     }
 
-    pub fn get_updates(&mut self) -> impl Future<Item = Vec<Update>, Error = Error> {
+    pub fn get_updates(&mut self) -> Box<Future<Item = Vec<Update>, Error = Error>> {
         //! Fetches updates and returns a `Vec<packages::Update>` or an `packages::Error`
         // TODO enable optional parameters
         // TODO cleanup, write code more compact
-        self.http_post("getUpdates", "{}")
-        .map_err(|_| {
-            Error {
-                ok: false,
-                error_code: 0,
-                description: "Http / Hyper Error".to_owned(),
-            }
-        })
-        .and_then(|json| {
-        match json {
-            Value::Null => {
-                // TODO log this error
-                Ok(Vec::new())
-            }
-            Value::Object(obj) => {
-                if obj["ok"].as_bool().unwrap() {
-                    match obj["result"] {
-                        Value::Array(ref array) => {
-                            let mut result: Vec<Update> = Vec::new();
-                            for object in array {
-                                let upd = Update::from_json(object.to_owned());
-                                if upd.is_some() {
-                                    result.push(upd.unwrap());
-                                }
-                            }
-                            Ok(result)
-                        }
-                        _ => {
-                            // TODO log error!
-                            Ok(Vec::new())
-                        }
+        //self.http_post("getUpdates", "{}")
+        Box::new(
+            self.http_post("getUpdates", "{}")
+                .map_err(|e| {
+                    println!("{}", e);
+                    Error {
+                        ok: false,
+                        error_code: 0,
+                        description: "Http / Hyper Error".to_owned(),
                     }
-                } else {
-                    Err(Error::from_json(Value::Object(obj)))
-                }
-            }
-            _ => Ok(Vec::new()),
-        }})
+                })
+                .and_then(|json| {
+                    match json {
+                        Value::Object(obj) => {
+                            if obj["ok"].as_bool().unwrap() {
+                                match obj["result"] {
+                                    Value::Array(ref array) => {
+                                        let mut result: Vec<Update> = Vec::new();
+                                        for object in array {
+                                            let upd = Update::from_json(object.to_owned());
+                                            if upd.is_some() {
+                                                result.push(upd.unwrap());
+                                            }
+                                        }
+                                        Ok(result)
+                                    }
+                                    _ => {
+                                        // TODO log error!
+                                        Ok(Vec::new())
+                                    }
+                                }
+                            } else {
+                                Ok(Vec::new())
+                            }
+                        }
+                        _ => Ok(Vec::new()),
+                    }
+                }),
+        )
     }
 
     pub fn get_me(&mut self) -> impl Future<Item = User, Error = Error> {
@@ -105,16 +106,17 @@ impl Bot {
                     description: "Http / Hyper Error".to_owned(),
                 }
             })
-            .and_then(|json| {
-                if json["ok"] == true {
+            .and_then(|json| if json["ok"] == true {
                 Ok(User::from_json(json["result"].to_owned()).unwrap())
             } else {
                 Err(Error::from_json(json))
-            }
-        })
+            })
     }
 
-    pub fn send_message(&mut self, parameters: MessageParams) -> impl Future<Item = Value, Error = hyper::Error> {
+    pub fn send_message(
+        &mut self,
+        parameters: MessageParams,
+    ) -> impl Future<Item = Value, Error = hyper::Error> {
         //! Sends a message and returns what the telegram servers received.
         // TODO enable optional parameters
         // TODO map the return value to some useful struct (message?)
@@ -138,7 +140,11 @@ impl Bot {
         content
     }
 
-    fn http_post(&mut self, method: &str, json: &str) -> impl Future<Item = Value, Error = hyper::Error> {
+    fn http_post(
+        &mut self,
+        method: &str,
+        json: &str,
+    ) -> impl Future<Item = Value, Error = hyper::Error> {
         //! Sends a POST request at `base_url/method` with a given `&str`
         //! which must be valid JSON.
         let uri = (self.base_url.to_owned() + method).parse().unwrap();

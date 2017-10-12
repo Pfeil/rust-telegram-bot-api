@@ -8,7 +8,6 @@
 
 
 extern crate serde_json; // json parser
-
 use self::serde_json::Value;
 
 
@@ -28,7 +27,40 @@ impl Error {
 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Update {
+pub enum Update {
+    EmptyUpdate,
+    TextMessage(u64, Message),
+    EditedTextMessage(u64, Message),
+    ChannelPost(u64, Message),
+    EditedChannelPost(u64, Message),
+    // TODO implement functionality below
+    //inline_query: Option<InlineQuery>,
+    //pub chosen_inline_result: Option<ChosenInlineResult>,
+    //pub callback_query: Option<CallbackQuery>,
+    //pub shipping_query: Option<ShippingQuery>,
+    //pub pre_checkout_query: Option<PreCheckoutQuery>,
+}
+
+impl Update {
+    pub fn from_json(json: Value) -> Option<Update> {
+        let update_id = serde_json::from_value(json["update_id"].to_owned());
+        if update_id.is_err() {
+            return Option::None;
+        }
+        let raw = UpdateRaw {
+            update_id: update_id.unwrap(),
+            message: Message::from_json(json["message"].to_owned()),
+            edited_message: Message::from_json(json["edited_message"].to_owned()),
+            channel_post: Message::from_json(json["channel_post"].to_owned()),
+            edited_channel_post: Message::from_json(json["edited_channel_post"].to_owned()),
+        };
+        Some(raw.into_update())
+    }
+}
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UpdateRaw {
     pub update_id: u64,
     pub message: Option<Message>,
     pub edited_message: Option<Message>,
@@ -42,22 +74,27 @@ pub struct Update {
     //pub pre_checkout_query: Option<PreCheckoutQuery>,
 }
 
-#[allow(dead_code)]
-impl Update {
-    pub fn from_json(json: Value) -> Option<Update> {
-        let update_id = serde_json::from_value(json["update_id"].to_owned());
-        if update_id.is_err() {
-            return Option::None;
+impl UpdateRaw {
+    pub fn into_update(self) -> Update {
+        use self::Update::*;
+        let id = self.update_id;
+        if let Some(m) = self.message {
+            return TextMessage(id, m);
         }
-        Some(Update {
-                 update_id: update_id.unwrap(),
-                 message: Message::from_json(json["message"].to_owned()),
-                 edited_message: Message::from_json(json["edited_message"].to_owned()),
-                 channel_post: Message::from_json(json["channel_post"].to_owned()),
-                 edited_channel_post: Message::from_json(json["edited_channel_post"].to_owned()),
-             })
+        if let Some(m) = self.edited_message {
+            return EditedTextMessage(id, m);
+        }
+        if let Some(m) = self.channel_post {
+            return ChannelPost(id, m);
+        }
+        if let Some(m) = self.edited_channel_post {
+            return EditedChannelPost(id, m);
+        } else {
+            EmptyUpdate
+        }
     }
 }
+
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Message {
@@ -81,14 +118,15 @@ impl Message {
         //};
         let chat = Chat::from_json(json["chat"].to_owned());
         Some(Message {
-                 message_id: id.unwrap(),
-                 from: User::from_json(json["from"].to_owned()),
-                 date: serde_json::from_value(json["date"].to_owned()).unwrap(),
-                 chat: chat.unwrap(),
-                 text: serde_json::from_value(json["text"].to_owned()).unwrap(),
-             })
+            message_id: id.unwrap(),
+            from: User::from_json(json["from"].to_owned()),
+            date: serde_json::from_value(json["date"].to_owned()).unwrap(),
+            chat: chat.unwrap(),
+            text: serde_json::from_value(json["text"].to_owned()).unwrap(),
+        })
     }
 }
+
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct User {
@@ -106,6 +144,7 @@ impl User {
     }
 }
 
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Chat {
     pub id: i64,
@@ -120,8 +159,8 @@ impl Chat {
             _ => return Option::None,
         };
         Some(Chat {
-                 id: serde_json::from_value(json["id"].to_owned()).unwrap(),
-                 chat_type: chat_type,
-             })
+            id: serde_json::from_value(json["id"].to_owned()).unwrap(),
+            chat_type: chat_type,
+        })
     }
 }
