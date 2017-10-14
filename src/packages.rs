@@ -4,11 +4,12 @@
 //! Since members can't use the name `type`,
 //! the deserialization of serde_json can not be used
 //! in every case and is therefore manually implemented
-//! or wrapped.
+//! or wrapped in the "from_json" functions.
 
 
 extern crate serde_json; // json parser
 use self::serde_json::Value;
+use std::fmt;
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -141,6 +142,12 @@ pub struct User {
 impl User {
     pub fn from_json(json: Value) -> Option<User> {
         serde_json::from_value(json).unwrap()
+    }
+}
+
+impl fmt::Display for User {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.first_name)
     }
 }
 

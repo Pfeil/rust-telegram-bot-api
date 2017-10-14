@@ -50,52 +50,52 @@ impl Bot {
         }
     }
 
-    pub fn get_updates(&mut self) -> Box<Future<Item = Vec<Update>, Error = Error>> {
+    pub fn get_updates(&self) -> impl Future<Item = Vec<Update>, Error = Error> {
         //! Fetches updates and returns a `Vec<packages::Update>` or an `packages::Error`
         // TODO enable optional parameters
         // TODO cleanup, write code more compact
         //self.http_post("getUpdates", "{}")
-        Box::new(
-            self.http_post("getUpdates", "{}")
-                .map_err(|e| {
-                    println!("{}", e);
-                    Error {
-                        ok: false,
-                        error_code: 0,
-                        description: "Http / Hyper Error".to_owned(),
-                    }
-                })
-                .and_then(|json| {
-                    match json {
-                        Value::Object(obj) => {
-                            if obj["ok"].as_bool().unwrap() {
-                                match obj["result"] {
-                                    Value::Array(ref array) => {
-                                        let mut result: Vec<Update> = Vec::new();
-                                        for object in array {
-                                            let upd = Update::from_json(object.to_owned());
-                                            if upd.is_some() {
-                                                result.push(upd.unwrap());
-                                            }
+        //Box::new(
+        self.http_post("getUpdates", "{}")
+            .map_err(|e| {
+                println!("{}", e);
+                Error {
+                    ok: false,
+                    error_code: 0,
+                    description: "Http / Hyper Error".to_owned(),
+                }
+            })
+            .and_then(|json| {
+                match json {
+                    Value::Object(obj) => {
+                        if obj["ok"].as_bool().unwrap() {
+                            match obj["result"] {
+                                Value::Array(ref array) => {
+                                    let mut result: Vec<Update> = Vec::new();
+                                    for object in array {
+                                        let upd = Update::from_json(object.to_owned());
+                                        if upd.is_some() {
+                                            result.push(upd.unwrap());
                                         }
-                                        Ok(result)
                                     }
-                                    _ => {
-                                        // TODO log error!
-                                        Ok(Vec::new())
-                                    }
+                                    Ok(result)
                                 }
-                            } else {
-                                Ok(Vec::new())
+                                _ => {
+                                    // TODO log error!
+                                    Ok(Vec::new())
+                                }
                             }
+                        } else {
+                            Ok(Vec::new())
                         }
-                        _ => Ok(Vec::new()),
                     }
-                }),
-        )
+                    _ => Ok(Vec::new()),
+                }
+            })
+        //)
     }
 
-    pub fn get_me(&mut self) -> impl Future<Item = User, Error = Error> {
+    pub fn get_me(&self) -> impl Future<Item = User, Error = Error> {
         //! Fetches information about this bot from the telegram server.
         //! This is a testing functionalty offered by the telegram bot api.
         self.http_post("getMe", "{}")
@@ -114,7 +114,7 @@ impl Bot {
     }
 
     pub fn send_message(
-        &mut self,
+        &self,
         parameters: MessageParams,
     ) -> impl Future<Item = Value, Error = hyper::Error> {
         //! Sends a message and returns what the telegram servers received.
@@ -123,7 +123,7 @@ impl Bot {
         self.http_post("sendMessage", parameters.to_json().as_str())
     }
 
-    fn http_get(&mut self, method: &str) -> impl Future<Item = Value, Error = hyper::Error> {
+    fn http_get(&self, method: &str) -> impl Future<Item = Value, Error = hyper::Error> {
         //! Sends a GET request at `base_url/method`.
         let uri = (self.base_url.to_owned() + method).parse().unwrap();
         println!("GET({:?})", uri);
@@ -141,7 +141,7 @@ impl Bot {
     }
 
     fn http_post(
-        &mut self,
+        &self,
         method: &str,
         json: &str,
     ) -> impl Future<Item = Value, Error = hyper::Error> {

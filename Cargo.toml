@@ -1,6 +1,6 @@
 [package]
 name = "shoppingbot"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Andreas Pfeil <andreas.pfeil@student.kit.edu>"]
 
 [dependencies]
