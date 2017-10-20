@@ -9,7 +9,6 @@ use shoppingbot::packages::*;
 use shoppingbot::packages::Update::*;
 use shoppingbot::parameters::*;
 use std::time::{Duration, Instant};
-use std::thread; // to let the application sleep
 use std::env; // to read shell variables (telegram token)
 use tokio_core::reactor::Core; // application loop
 use futures::future::Future;
