@@ -5,8 +5,7 @@
 extern crate futures;
 // http library
 extern crate hyper;
-// https support lol
-extern crate hyper_tls;
+extern crate hyper_rustls;
 // json parser
 extern crate serde_json;
 // app loop
@@ -17,9 +16,8 @@ use std::io;
 use std::string::String;
 use self::futures::{Future, Stream};
 use self::hyper::{Body, Client, Method, Request};
-use self::hyper::client::HttpConnector;
 use self::hyper::header::{ContentLength, ContentType};
-use self::hyper_tls::HttpsConnector;
+use self::hyper_rustls::HttpsConnector;
 use self::tokio_core::reactor::Handle;
 use self::serde_json::Value;
 use packages::*;
@@ -29,7 +27,7 @@ use parameters::*;
 /// This struct offers access to all implemented bot functionality.
 pub struct Bot {
     base_url: String,
-    http: Client<HttpsConnector<HttpConnector>, hyper::Body>,
+    http: Client<HttpsConnector, Body>,
 }
 
 #[allow(dead_code)]
@@ -41,7 +39,7 @@ impl Bot {
         // TODO can I somehow remove the core_handle?
         // TODO how many threads should be used? Expose `with_threads(n: usize)`
         let http = Client::configure()
-            .connector(HttpsConnector::new(2, &handle).unwrap())
+            .connector(HttpsConnector::new(2, &handle))
             .build(&handle);
         let base_url = "https://api.telegram.org/bot".to_owned() + token.as_str() + "/";
         Bot {
