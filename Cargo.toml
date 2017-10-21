@@ -1,7 +1,12 @@
 [package]
-name = "shoppingbot"
-version = "0.3.0"
+name = "telebot-rs"
+version = "0.4.0"
 authors = ["Andreas Pfeil <andreas.pfeil@student.kit.edu>"]
+publish = false
+description = "This library shall make it easy to code Telegram bots in Rust."
+repository = "https://github.com/Pfeil/rust-telegram-bot-api"
+readme = "README.md"
+keywords = ["telegram", "bot", "api", "messenger", "chat"]
 
 [dependencies]
 time = "0.1.38"

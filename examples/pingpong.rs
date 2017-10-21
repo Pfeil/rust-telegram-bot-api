@@ -1,13 +1,13 @@
 //! A simple example of a bot, reacting on input by returning a message.
 
 extern crate futures;
-extern crate shoppingbot;
+extern crate telebot_rs;
 extern crate tokio_core;
 
-use shoppingbot::api::Bot;
-use shoppingbot::packages::*;
-use shoppingbot::packages::Update::*;
-use shoppingbot::parameters::*;
+use telebot_rs::api::Bot;
+use telebot_rs::packages::*;
+use telebot_rs::packages::Update::*;
+use telebot_rs::parameters::*;
 use std::time::{Duration, Instant};
 use std::env; // to read shell variables (telegram token)
 use tokio_core::reactor::Core; // application loop

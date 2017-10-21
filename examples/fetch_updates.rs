@@ -2,12 +2,12 @@
 //! and printing out the results via stdout.
 
 extern crate futures;
-extern crate shoppingbot;
+extern crate telebot_rs;
 extern crate tokio_core;
 
-use shoppingbot::api::Bot;
-use shoppingbot::packages::*;
-use shoppingbot::packages::Update::*;
+use telebot_rs::api::Bot;
+use telebot_rs::packages::*;
+use telebot_rs::packages::Update::*;
 use std::time::{Duration, Instant};
 use std::thread; // to let the application sleep
 use std::env; // to read shell variables (telegram token)

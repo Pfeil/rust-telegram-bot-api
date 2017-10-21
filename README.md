@@ -20,6 +20,7 @@ Take a look in the examples folder to see runnable and well documented examples.
 (in rough priority)
 
 1. More Feature support
-	* especially custom buttons and keyboards
+	* Maybe use and extend https://github.com/yuri91/telegram-bot-types-rs
+	* add support for custom buttons and keyboards
 2. code improvements in api module
 3. Webhook support
