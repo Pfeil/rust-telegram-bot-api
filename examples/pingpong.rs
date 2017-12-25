@@ -5,24 +5,26 @@ extern crate telebot_rs;
 extern crate tokio_core;
 
 use telebot_rs::api::Bot;
-use telebot_rs::packages::*;
-use telebot_rs::packages::Update::*;
-use telebot_rs::parameters::*;
+use telebot_rs::receivables::*;
+use telebot_rs::receivables::Receivable as recv;
+use telebot_rs::sendables::*;
+//use telebot_rs::error::Error;
+
 use std::time::{Duration, Instant};
-use std::env; // to read shell variables (telegram token)
 use tokio_core::reactor::Core; // application loop
 use futures::future::Future;
 
 /// This example is a simple loop that fetches Updates
 /// and responds to new (sent after starting the bot) updates with "pong".
 fn main() {
-    // get token via environment variable. Never store your keys in the code!
-    let token: String = env::var("TELEGRAM_BOT_TOKEN").unwrap();
-    let mut core = Core::new().unwrap(); // event loop (like qApp and similar)
+    let mut core = Core::new().unwrap(); // event loop
     // use a `Handle` to queue (spawn) something into the event loop.
     // later, give the core time ("turn") to handle the queued futures.
     let handle = core.handle();
-    let bot = Bot::new(token, &core.handle());
+    // TELEGRAM_BOT_TOKEN is the name of the environment variable the API key should be stored.
+    // Feel free to change it. Especially if you need to run multiple bots.
+    let bot = Bot::new("TELEGRAM_BOT_TOKEN", &core.handle());
+
     let interval = Duration::from_millis(3000); // set polling interval
 
     // mark all messages in first update as already read,
@@ -31,23 +33,25 @@ fn main() {
 
     // remember already processed updates with this vector.
     // TODO a data structure with unique elements would be better here.
-    let mut processed: Vec<u64> = Vec::new();
+    let mut processed: Vec<i64> = Vec::new();
 
     // handling a single update is implemented (in this case) as
     // a closure (a function without a name, stored in a variable)
     // this will answer "pong" to messages that are both, unprocessed and new.
     // Not that it does this not immediately, but spawns a future
     // to the event loop.
-    let mut process_update = |id: u64, m: Message, old_done: bool| -> () {
+    let mut process_update = |id: i64, m: Message, old_done: bool| -> () {
         if !processed.contains(&id) {
             processed.push(id);
             if old_done {
                 let chat_id = m.chat.id.to_string();
-                let text = "pong".to_owned();
-                let ack = bot.send_message(MessageParams {
-                    chat_id: chat_id,
-                    text: text,
-                }).and_then(|response| {
+                let text = "This bot is written with *telebot-rs* in _pure rust_. ".to_owned()
+                    + "It offers link previews and markdown formatting by default.\n"
+                    + "Since there is not yet any other feature here, just watch this cute cat :)"
+                    + "\nhttps://youtu.be/Mvdwo3D6VBw";
+                let ack = bot.send_message(
+                        MessageParams::new(chat_id, text).hide_link_preview(false).build()
+                    ).and_then(|response| {
                         println!("{:?}", response);
                         Ok(())
                     })
@@ -64,14 +68,18 @@ fn main() {
         // every single one of them using the closure above.
         // Note that you can easily distinguish the update types here.
         let update_handler = bot.get_updates().and_then(|updates| {
-            println!("received {:?}", updates);
             for upd in updates {
                 match upd {
-                    TextMessage(id, m) => process_update(id, m, old_messages_done),
-                    EditedTextMessage(id, m) => process_update(id, m, old_messages_done),
-                    ChannelPost(id, m) => process_update(id, m, old_messages_done),
-                    EditedChannelPost(id, m) => process_update(id, m, old_messages_done),
-                    _ => {}
+                    recv::NewMessage(id, m) => process_update(id, m, old_messages_done),
+                    recv::EditedMessage(id, m) => process_update(id, m, old_messages_done),
+                    recv::ChannelPost(id, m) => process_update(id, m, old_messages_done),
+                    recv::EditedChannelPost(id, m) => process_update(id, m, old_messages_done),
+                    _ => {},  // ignore the rest for demonstration purposes
+                    //InlineQuery(i64, ext::InlineQuery),
+                    //ChosenInlineResult(i64, ext::ChosenInlineResult),
+                    //CallbackQuery(i64, ext::CallbackQuery),
+                    //ShippingQuery(i64, ext::ShippingQuery),
+                    //PreCheckoutQuery(i64, ext::PreCheckoutQuery),
                 }
             }
             old_messages_done = true;
