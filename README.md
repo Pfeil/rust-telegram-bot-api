@@ -11,9 +11,15 @@ Take a look in the examples folder to see runnable and well documented examples.
 
 ## Current features
 * Polling Updates (currently no Webhook support).
-	* I just do not need it for my current use case. Feel free to implement this.
+	* I just do not need Webhooks for my current use case. Feel free to implement this.
 * Asynchonous API via Futures and Tokio_Core. This API is not yet stable, though. It will change a lot.
 * Send and receive simple messages and edited messages from users and channels.
+	* This includes link previews,
+	* Markdown (default) and HTML format support (no builder for Markdown or HTML (yet), just use Strings),
+	* Notification hiding (default=false),
+	* Replies,
+	* and Message Buttons, custom Keyboards, etc. (but no builder yet, so it is currently not as comfortable as it should and will be).
+	* probably stuff I forgot.
 
 
 ## Todo & Contribution

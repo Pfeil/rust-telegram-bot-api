@@ -16,7 +16,7 @@ use error::Error;
 pub use self::tg_bot_models::*;
 
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Receivable {
     NewMessage(i64, Message),
     EditedMessage(i64, Message),

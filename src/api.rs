@@ -5,6 +5,7 @@
 extern crate hyper;
 extern crate hyper_rustls;
 
+extern crate serde;
 extern crate serde_json;
 extern crate tg_bot_models;
 
@@ -21,6 +22,7 @@ use self::hyper::header::{ContentLength, ContentType};
 use self::hyper_rustls::HttpsConnector;
 use self::tokio_core::reactor::Handle;
 use self::serde_json::Value;
+use self::serde::ser::Serialize;
 // use packages::*;
 use sendables::*;
 use receivables::*;
@@ -92,10 +94,12 @@ impl Bot {
             })
     }
 
-    pub fn send_message(
+    pub fn send_message<K>(
         &self,
-        parameters: MessageParams,
-    ) -> impl Future<Item = Value, Error = hyper::Error> {
+        parameters: MessageParams<K>,
+    ) -> impl Future<Item = Value, Error = hyper::Error>
+    where K: Keyboard + Serialize
+    {
         //! Sends a message and returns what the telegram servers received.
         // TODO enable optional parameters
         // TODO map the return value to some useful struct (message?)
